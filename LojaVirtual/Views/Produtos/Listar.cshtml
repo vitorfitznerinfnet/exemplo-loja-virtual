@@ -1,0 +1,26 @@
+﻿@model List<LojaVirtual.Models.Produto>
+@{
+    var listaDeProdutos = Model;
+}
+
+<h3>Lista de produtos</h3>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">Nome</th>
+            <th scope="col">Preço</th>
+            <th scope="col">Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var produto in listaDeProdutos)
+        {
+            <tr>
+                <td>@produto.Nome</td>
+                <td>@produto.Preco</td>
+                <td><a href="/produtos/editar">Editar</a> / <a href="/produtos/excluir">Excluir</a></td>
+            </tr>
+        }
+    </tbody>
+</table>
