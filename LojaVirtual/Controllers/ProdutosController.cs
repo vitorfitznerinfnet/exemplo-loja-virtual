@@ -21,8 +21,19 @@ namespace LojaVirtual.Controllers
 
         [HttpGet]
         [Route("produtos/listar")]
-        public ActionResult Listar()
+        public ActionResult Listar(string pesquisa, string ordenarpelonome)
         {
+            if (pesquisa != null)
+            {
+                var produtosPesquisados = produtos.Where(produto => produto.Nome == pesquisa).ToList();
+                return View(produtosPesquisados);
+            }
+
+            if (ordenarpelonome == "asc")
+            {
+                return View(produtos.OrderBy(produto => produto.Nome).ToList());
+            }
+
             return View(produtos);
         }
 
