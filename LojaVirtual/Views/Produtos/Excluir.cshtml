@@ -1,0 +1,16 @@
+﻿@model LojaVirtual.Models.Produto
+@{
+    var produto = Model;
+}
+
+Página de exclusão de produtos
+<br />
+
+<form action="/produtos/excluir" method="post">
+    <input type="hidden" name="identificador" value="@produto.Id" />
+    Identificador: @produto.Id <br /> 
+    Nome: @produto.Nome<br />
+    Preco: @produto.Preco<br />
+    <input type="submit" value="Confirmar exclusão" /><br />
+    <a href="/produtos/listar">voltar para lista</a>
+</form>

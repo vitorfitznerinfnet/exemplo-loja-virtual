@@ -1,0 +1,14 @@
+﻿@model LojaVirtual.Models.Produto
+@{
+    var produto = Model;
+}
+
+Página de edição de produtos
+<br />
+
+<form action="/produtos/editar" method="post">
+    Identificador: <input type="text" name="identificador" value="@produto.Id" readonly/><br />
+    Nome: <input type="text" name="nome" value="@produto.Nome"/><br />
+    Preco: <input type="text" name="preco" value="@produto.Preco"/><br />
+    <input type="submit" value="Salvar alterações" />
+</form>

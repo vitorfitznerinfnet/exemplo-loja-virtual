@@ -30,9 +30,11 @@ namespace LojaVirtual.Controllers
         public ActionResult ExecutarCadastroDeProduto(string nome, decimal preco)
         {
             Produto produto = new Produto();
+
             produto.Nome = nome;
             produto.Preco = preco;
-            
+            produto.Id = produtos.Count + 1;
+
             produtos.Add(produto);
 
             return Redirect("/produtos/listar");
@@ -44,6 +46,52 @@ namespace LojaVirtual.Controllers
         public ActionResult ProdutoCadastrado()
         {
             return View();
+        }
+
+        //Criar, Alterar, Buscar, Excluir
+        //CRUD      = create, read, update, delete
+        //CRUD HTTP = post,   get,  put,    delete
+        
+        [HttpGet]
+        [Route("produtos/editar")]
+        public ActionResult Editar(int identificador)
+        {
+            var produto = produtos.First(produto => produto.Id == identificador);
+
+            return View(produto);
+        }
+
+        [HttpPost]
+        [Route("produtos/editar")]
+        [Route("prod/editar")]
+        public ActionResult Editar(string nome, decimal preco, int identificador)
+        {
+            Produto produto = produtos.First(produto => produto.Id == identificador);
+            produto.Nome = nome;
+            produto.Preco = preco;
+
+            return Redirect("/produtos/listar");
+            //return Redirect("/produtos/editar?identificador=" + identificador);
+        }
+
+        [HttpGet]
+        [Route("produtos/excluir")]
+        public ActionResult ExcluirGet(int identificador)
+        {
+            var produto = produtos.First(produto => produto.Id == identificador);
+
+            return View("excluir", produto);
+        }
+
+        [HttpPost]
+        [Route("produtos/excluir")]
+        public ActionResult ExcluirPost(int identificador)
+        {
+            var produto = produtos.First(produto => produto.Id == identificador);
+
+            produtos.Remove(produto);
+
+            return Redirect("/produtos/listar");
         }
     }
 }

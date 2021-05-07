@@ -19,7 +19,10 @@
             <tr>
                 <td>@produto.Nome</td>
                 <td>@produto.Preco</td>
-                <td><a href="/produtos/editar">Editar</a> / <a href="/produtos/excluir">Excluir</a></td>
+                <td>
+                    <a href="/produtos/editar?identificador=@produto.Id">Editar</a> / 
+                    <a href="/produtos/excluir?identificador=@produto.Id">Excluir</a>
+                </td>
             </tr>
         }
     </tbody>
