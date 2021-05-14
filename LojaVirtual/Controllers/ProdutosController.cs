@@ -1,9 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using LojaVirtual.Models;
+using System.Data.SqlClient;
+using System;
+using System.Data;
 
 namespace LojaVirtual.Controllers
 {
@@ -23,16 +24,9 @@ namespace LojaVirtual.Controllers
         [Route("produtos/listar")]
         public ActionResult Listar(string pesquisa, string ordenarpelonome)
         {
-            if (pesquisa != null)
-            {
-                var produtosPesquisados = produtos.Where(produto => produto.Nome == pesquisa).ToList();
-                return View(produtosPesquisados);
-            }
+            var service = new ProdutosService();
 
-            if (ordenarpelonome == "asc")
-            {
-                return View(produtos.OrderBy(produto => produto.Nome).ToList());
-            }
+            var produtos = service.ListarProdutos(pesquisa, ordenarpelonome);
 
             return View(produtos);
         }
@@ -40,18 +34,23 @@ namespace LojaVirtual.Controllers
         [HttpPost]
         public ActionResult ExecutarCadastroDeProduto(string nome, decimal preco)
         {
-            Produto produto = new Produto();
+            var service = new ProdutosService();
 
-            produto.Nome = nome;
-            produto.Preco = preco;
-            produto.Id = produtos.Count + 1;
-
-            produtos.Add(produto);
+            service.CadastrarProduto(nome, preco);
 
             return Redirect("/produtos/listar");
         }
 
-        static List<Produto> produtos = new List<Produto>();
+        [HttpPost]
+        [Route("produtos/excluir")]
+        public ActionResult ExcluirPost(int identificador)
+        {
+            var service = new ProdutosService();
+
+            service.ExcluirProduto(identificador);
+
+            return Redirect("/produtos/listar");
+        }
 
         [HttpGet]
         public ActionResult ProdutoCadastrado()
@@ -59,15 +58,13 @@ namespace LojaVirtual.Controllers
             return View();
         }
 
-        //Criar, Alterar, Buscar, Excluir
-        //CRUD      = create, read, update, delete
-        //CRUD HTTP = post,   get,  put,    delete
-        
         [HttpGet]
         [Route("produtos/editar")]
         public ActionResult Editar(int identificador)
         {
-            var produto = produtos.First(produto => produto.Id == identificador);
+            var service = new ProdutosService();
+
+            var produto = service.BuscarPelo(identificador);
 
             return View(produto);
         }
@@ -77,32 +74,139 @@ namespace LojaVirtual.Controllers
         [Route("prod/editar")]
         public ActionResult Editar(string nome, decimal preco, int identificador)
         {
-            Produto produto = produtos.First(produto => produto.Id == identificador);
+            var service = new ProdutosService();
+
+            var produto = service.BuscarPelo(identificador);
             produto.Nome = nome;
             produto.Preco = preco;
 
+            //adicionar operacao de salvar
+
             return Redirect("/produtos/listar");
-            //return Redirect("/produtos/editar?identificador=" + identificador);
         }
 
         [HttpGet]
         [Route("produtos/excluir")]
         public ActionResult ExcluirGet(int identificador)
         {
-            var produto = produtos.First(produto => produto.Id == identificador);
+            var service = new ProdutosService();
+
+            var produto = service.BuscarPelo(identificador);
 
             return View("excluir", produto);
         }
+    }
 
-        [HttpPost]
-        [Route("produtos/excluir")]
-        public ActionResult ExcluirPost(int identificador)
+    public class ProdutosService
+    {
+        public Produto BuscarPelo(int identificador)
         {
-            var produto = produtos.First(produto => produto.Id == identificador);
+            var comando = AbrirConexaoECriarComando();
 
-            produtos.Remove(produto);
+            comando.CommandText = "select * from produto where id = @id";
 
-            return Redirect("/produtos/listar");
+            comando.Parameters.AddWithValue("@id", identificador);
+
+            var leitor = comando.ExecuteReader();
+
+            var produto = new Produto();
+
+            while (leitor.Read())
+            {
+                var nome = leitor["Nome"];
+                var preco = leitor["Preco"];
+
+                produto.Id = identificador;
+                produto.Nome = Convert.ToString(nome);
+                produto.Preco = Convert.ToInt32(preco);
+            }
+
+            comando.Connection.Close();
+
+            return produto;
+        }
+
+        public void CadastrarProduto(string nome, decimal preco)
+        {
+            Produto produto = new Produto();
+
+            produto.Nome = nome;
+            produto.Preco = preco;
+
+            var comando = AbrirConexaoECriarComando();
+
+            comando.CommandText = "insert into produto(nome, preco, quantidade) values(@nome, @preco, @quantidade);";
+
+            comando.Parameters.AddWithValue("@nome", produto.Nome);
+            comando.Parameters.AddWithValue("@preco", produto.Preco);
+            comando.Parameters.AddWithValue("@quantidade", produto.Quantidade);
+            comando.ExecuteNonQuery();
+
+            comando.Connection.Close();
+        }
+
+        public List<Produto> ListarProdutos(string pesquisa, string ordenarpelonome)
+        {
+            SqlCommand comando = AbrirConexaoECriarComando();
+
+            string consulta = "select * from produto";
+            comando.CommandText = consulta;
+
+            var leitor = comando.ExecuteReader();
+
+            var produtos = new List<Produto>();
+
+            while (leitor.Read())
+            {
+                var nome = leitor["Nome"];
+                var preco = leitor["Preco"];
+
+                var produto = new Produto();
+                produto.Nome = Convert.ToString(nome);
+                produto.Preco = Convert.ToInt32(preco);
+                produtos.Add(produto);
+            }
+
+            var date = DateTime.UtcNow.AddHours(-30);
+
+            comando.Connection.Close();
+
+            if (pesquisa != null)
+            {
+                var produtosPesquisados = produtos.Where(produto => produto.Nome == pesquisa).ToList();
+            }
+
+            if (ordenarpelonome == "asc")
+            {
+                produtos = produtos.OrderBy(produto => produto.Nome).ToList();
+            }
+
+            return produtos;
+        }
+
+        public void ExcluirProduto(int id)
+        {
+            var comando = AbrirConexaoECriarComando();
+
+            comando.CommandText = "delete from produto where id = @id";
+
+            comando.Parameters.AddWithValue("@id", id);
+
+            comando.ExecuteNonQuery();
+        }
+
+        public void AtualizarProduto()
+        {
+
+        }
+
+        public SqlCommand AbrirConexaoECriarComando()
+        {
+            var dbConnection = new SqlConnection();
+            dbConnection.ConnectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=LojaVirtualDb;Integrated Security=True;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False";
+            dbConnection.Open();
+            var comando = dbConnection.CreateCommand();
+            return comando;
         }
     }
 }
